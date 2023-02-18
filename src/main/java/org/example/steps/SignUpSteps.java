@@ -1,6 +1,5 @@
 package org.example.steps;
 
-import org.example.pages.CheckMailPage;
 import org.example.pages.SignUpPage;
 import org.openqa.selenium.WebElement;
 

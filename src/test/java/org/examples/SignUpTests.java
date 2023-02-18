@@ -5,18 +5,19 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.CucumberOptions;
+import net.serenitybdd.cucumber.CucumberWithSerenity;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.example.pages.CheckMailPage;
 import org.example.steps.CheckMailSteps;
 import org.example.steps.SignUpSteps;
 import org.junit.Assert;
+import org.junit.runner.RunWith;
 
 import javax.script.ScriptException;
 
-@CucumberOptions(
-        features = "src/test/resources",
-        glue = {"org.example"}
-)
+@RunWith(CucumberWithSerenity.class)
+@CucumberOptions(plugin = {"pretty"},
+        features = "src/test/java/resources/test.feature",
+        glue = "com.examples")
 
 public class SignUpTests {
     SignUpSteps signUpPageSteps = new SignUpSteps();
