@@ -7,6 +7,7 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.CucumberOptions;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.example.pages.CheckMailPage;
+import org.example.steps.CheckMailSteps;
 import org.example.steps.SignUpSteps;
 import org.junit.Assert;
 
@@ -19,7 +20,7 @@ import javax.script.ScriptException;
 
 public class SignUpTests {
     SignUpSteps signUpPageSteps = new SignUpSteps();
-    CheckMailPage checkMailPage;
+    CheckMailSteps checkMailSteps;
 
     @Given("User is on sign up page")
     public void openTransferMateWebSite() {
@@ -71,12 +72,12 @@ public class SignUpTests {
 
     @And("User clicks on Open my free account button")
     public void userClicksOnButton() {
-        checkMailPage = signUpPageSteps.submitApplication();
+        checkMailSteps = signUpPageSteps.submitApplication();
     }
 
     @Then("User is redirected to the {} page")
     public void userIsRedirectedToTheEmailAndMobileNumberVerificationPage(String pageTitle) {
-        Assert.assertEquals(pageTitle, checkMailPage.getPageTitle());
+        Assert.assertEquals(pageTitle, checkMailSteps.pageTitle());
     }
 
     private String randomEmail() {

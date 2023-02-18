@@ -99,8 +99,8 @@ public class SignUpSteps {
         return value;
     }
 
-    public CheckMailPage submitApplication() {
+    public CheckMailSteps submitApplication() {
         signUpPage.clickOpenAccountButton();
-        return new CheckMailPage();
+        return new CheckMailSteps();
     }
 }
