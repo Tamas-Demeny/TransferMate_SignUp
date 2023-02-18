@@ -1,27 +1,38 @@
 package org.examples;
 
+import com.mailslurp.clients.ApiException;
+import com.mailslurp.models.InboxDto;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.junit.CucumberOptions;
-import net.serenitybdd.cucumber.CucumberWithSerenity;
+import net.thucydides.core.annotations.Steps;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.example.pages.HomePage;
+import org.example.pages.PasswordCreationPage;
 import org.example.steps.CheckMailSteps;
 import org.example.steps.SignUpSteps;
+import org.example.support.SmsReader;
+import org.example.support.TemporaryMail;
 import org.junit.Assert;
-import org.junit.runner.RunWith;
+import org.junit.Test;
 
 import javax.script.ScriptException;
-
-@RunWith(CucumberWithSerenity.class)
-@CucumberOptions(plugin = {"pretty"},
-        features = "src/test/java/resources/test.feature",
-        glue = "com.examples")
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SignUpTests {
+    @Steps
     SignUpSteps signUpPageSteps = new SignUpSteps();
+    @Steps
     CheckMailSteps checkMailSteps;
+    @Steps
+    TemporaryMail temporaryMail = new TemporaryMail();
+    String activationLink;
+    HomePage homePage = new HomePage();
+
+    public SignUpTests() throws ApiException {
+    }
 
     @Given("User is on sign up page")
     public void openTransferMateWebSite() {
@@ -132,5 +143,48 @@ public class SignUpTests {
         Assert.assertEquals("The number of errors were: " + signUpPageSteps.listOfErrors().size(),
                 11,
                 signUpPageSteps.listOfErrors().size());
+    }
+
+    @When("User fills in the required fields and submits application")
+    public void userFillsInTheRequiredFieldsAndSubmitsApplication() throws ScriptException, ApiException {
+        temporaryMail = new TemporaryMail();
+        InboxDto email = temporaryMail.createEmail();
+        String emailAddress = email.getEmailAddress();
+        signUpPageSteps.selectAccountType("individual")
+                .completeFirstNameField("Lajos")
+                .completeLastNameField("Kelemen")
+                .completeEmailField(emailAddress)
+                .selectCountryField("Romania")
+                .selectPhonePrefix("USA")
+                .completePhoneNumberField("9282715105")
+                .termsBoxCheck()
+                .completeCaptchaField()
+                .submitApplication();
+    }
+
+    @And("User confirms email verification")
+    public void userConfirmsEmailVerification() throws ApiException {
+        Pattern pattern = Pattern.compile("https\\S*n");
+        Matcher matcher = pattern.matcher(temporaryMail.getLink());
+
+        if (matcher.find()) {
+            activationLink = matcher.group();
+        }
+    }
+
+    @And("User sets password and fills SMS verification code")
+    public void userSetsPasswordAndFillsSMSVerificationCode() {
+        PasswordCreationPage passwordCreationPage = temporaryMail.openActivationLink(activationLink);
+        SmsReader smsReader = new SmsReader();
+
+        passwordCreationPage.fillInPasswords()
+                .submitPassword()
+                .fillInPin(smsReader.getPINCodeFromSMS())
+                .submitPin();
+    }
+
+    @Then("User is redirected to the new {} page")
+    public void userIsRedirectedToTheNewAccountVerificationPage(String pageTitle) {
+        Assert.assertTrue(homePage.accountProcessing());
     }
 }
