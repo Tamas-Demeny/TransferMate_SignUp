@@ -1,25 +1,35 @@
 package org.examples;
 
+import com.mailslurp.clients.ApiException;
+import com.mailslurp.models.InboxDto;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.CucumberOptions;
+import net.thucydides.core.annotations.Steps;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.example.pages.CheckMailPage;
+import org.example.pages.PasswordCreationPage;
+import org.example.steps.CheckMailSteps;
 import org.example.steps.SignUpSteps;
+import org.example.support.SmsReader;
+import org.example.support.TemporaryMail;
 import org.junit.Assert;
+import org.junit.Test;
 
 import javax.script.ScriptException;
 
-@CucumberOptions(
-        features = "src/test/resources",
-        glue = {"org.example"}
-)
-
 public class SignUpTests {
+    @Steps
     SignUpSteps signUpPageSteps = new SignUpSteps();
-    CheckMailPage checkMailPage;
+    @Steps
+    CheckMailSteps checkMailSteps;
+    @Steps
+    TemporaryMail temporaryMail = new TemporaryMail();
+
+    public SignUpTests() throws ApiException {
+    }
 
     @Given("User is on sign up page")
     public void openTransferMateWebSite() {
@@ -71,12 +81,12 @@ public class SignUpTests {
 
     @And("User clicks on Open my free account button")
     public void userClicksOnButton() {
-        checkMailPage = signUpPageSteps.submitApplication();
+        checkMailSteps = signUpPageSteps.submitApplication();
     }
 
     @Then("User is redirected to the {} page")
     public void userIsRedirectedToTheEmailAndMobileNumberVerificationPage(String pageTitle) {
-        Assert.assertEquals(pageTitle, checkMailPage.getPageTitle());
+        Assert.assertEquals(pageTitle, checkMailSteps.pageTitle());
     }
 
     private String randomEmail() {
@@ -130,5 +140,42 @@ public class SignUpTests {
         Assert.assertEquals("The number of errors were: " + signUpPageSteps.listOfErrors().size(),
                 11,
                 signUpPageSteps.listOfErrors().size());
+    }
+
+    @Test
+    public void print() {
+        System.out.println(System.getenv("MYAPIKEY"));
+    }
+
+    @Test
+    public void t() throws ApiException, ScriptException {
+
+        InboxDto email = temporaryMail.createEmail();
+
+        signUpPageSteps.openWebSite()
+                .cookiesBoxCheck()
+                .selectAccountType("individual")
+                .completeFirstNameField("Lajos")
+                .completeLastNameField("Kelemen")
+                .completeEmailField(email.getEmailAddress())
+                .selectCountryField("Romania")
+                .selectPhonePrefix("Romania")
+                .completePhoneNumberField("747674589")
+                .termsBoxCheck()
+                .completeCaptchaField()
+                .submitApplication();
+        System.out.println(temporaryMail.getReceivedEmail().toString());
+        temporaryMail.openActivationLink(temporaryMail.getText());
+
+        SmsReader smsReader = new SmsReader();
+        PasswordCreationPage passwordCreationPage = new PasswordCreationPage();
+        passwordCreationPage.fillInPasswords()
+                                .submitPassword()
+                                .fillInPin(smsReader.getPINCodeFromSMS())
+                                .submitPin();
+
+
+
+
     }
 }

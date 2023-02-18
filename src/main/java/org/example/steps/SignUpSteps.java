@@ -1,7 +1,10 @@
 package org.example.steps;
 
+import com.mailslurp.clients.ApiException;
+import com.mailslurp.models.InboxDto;
 import org.example.pages.CheckMailPage;
 import org.example.pages.SignUpPage;
+import org.example.support.TemporaryMail;
 import org.openqa.selenium.WebElement;
 
 import javax.script.ScriptEngine;
@@ -11,6 +14,10 @@ import java.util.List;
 
 public class SignUpSteps {
     SignUpPage signUpPage = new SignUpPage();
+    TemporaryMail temporaryMail = new TemporaryMail();
+
+    public SignUpSteps() throws ApiException {
+    }
 
     public SignUpSteps openWebSite() {
         signUpPage.openWebSite();
@@ -99,8 +106,8 @@ public class SignUpSteps {
         return value;
     }
 
-    public CheckMailPage submitApplication() {
+    public CheckMailSteps submitApplication() {
         signUpPage.clickOpenAccountButton();
-        return new CheckMailPage();
+        return new CheckMailSteps();
     }
 }
