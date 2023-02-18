@@ -82,3 +82,9 @@ Feature: TransferMate sign up test suit
   Scenario: User submits registration without completing mandatory fields
     When User clicks on Open my free account button
     Then User gets error messages for mandatory fields
+
+#    Scenario: User account creation and validation
+#      When User fills in the required fields and submits application
+#      And User confirms email verification
+#      And User sets password and fills SMS verification code
+#      Then User is redirected to the new Account being processed page

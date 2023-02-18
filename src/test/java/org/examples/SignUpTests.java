@@ -6,10 +6,9 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.junit.CucumberOptions;
 import net.thucydides.core.annotations.Steps;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.example.pages.CheckMailPage;
+import org.example.pages.HomePage;
 import org.example.pages.PasswordCreationPage;
 import org.example.steps.CheckMailSteps;
 import org.example.steps.SignUpSteps;
@@ -19,6 +18,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.script.ScriptException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SignUpTests {
     @Steps
@@ -27,6 +28,8 @@ public class SignUpTests {
     CheckMailSteps checkMailSteps;
     @Steps
     TemporaryMail temporaryMail = new TemporaryMail();
+    String activationLink;
+    HomePage homePage = new HomePage();
 
     public SignUpTests() throws ApiException {
     }
@@ -142,40 +145,46 @@ public class SignUpTests {
                 signUpPageSteps.listOfErrors().size());
     }
 
-    @Test
-    public void print() {
-        System.out.println(System.getenv("MYAPIKEY"));
-    }
-
-    @Test
-    public void t() throws ApiException, ScriptException {
-
+    @When("User fills in the required fields and submits application")
+    public void userFillsInTheRequiredFieldsAndSubmitsApplication() throws ScriptException, ApiException {
+        temporaryMail = new TemporaryMail();
         InboxDto email = temporaryMail.createEmail();
-
-        signUpPageSteps.openWebSite()
-                .cookiesBoxCheck()
-                .selectAccountType("individual")
+        String emailAddress = email.getEmailAddress();
+        signUpPageSteps.selectAccountType("individual")
                 .completeFirstNameField("Lajos")
                 .completeLastNameField("Kelemen")
-                .completeEmailField(email.getEmailAddress())
+                .completeEmailField(emailAddress)
                 .selectCountryField("Romania")
-                .selectPhonePrefix("Romania")
-                .completePhoneNumberField("747674589")
+                .selectPhonePrefix("USA")
+                .completePhoneNumberField("9282715105")
                 .termsBoxCheck()
                 .completeCaptchaField()
                 .submitApplication();
-        System.out.println(temporaryMail.getReceivedEmail().toString());
-        temporaryMail.openActivationLink(temporaryMail.getText());
+    }
 
+    @And("User confirms email verification")
+    public void userConfirmsEmailVerification() throws ApiException {
+        Pattern pattern = Pattern.compile("https\\S*n");
+        Matcher matcher = pattern.matcher(temporaryMail.getLink());
+
+        if (matcher.find()) {
+            activationLink = matcher.group();
+        }
+    }
+
+    @And("User sets password and fills SMS verification code")
+    public void userSetsPasswordAndFillsSMSVerificationCode() {
+        PasswordCreationPage passwordCreationPage = temporaryMail.openActivationLink(activationLink);
         SmsReader smsReader = new SmsReader();
-        PasswordCreationPage passwordCreationPage = new PasswordCreationPage();
+
         passwordCreationPage.fillInPasswords()
-                                .submitPassword()
-                                .fillInPin(smsReader.getPINCodeFromSMS())
-                                .submitPin();
+                .submitPassword()
+                .fillInPin(smsReader.getPINCodeFromSMS())
+                .submitPin();
+    }
 
-
-
-
+    @Then("User is redirected to the new {} page")
+    public void userIsRedirectedToTheNewAccountVerificationPage(String pageTitle) {
+        Assert.assertTrue(homePage.accountProcessing());
     }
 }

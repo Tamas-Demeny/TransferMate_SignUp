@@ -12,41 +12,24 @@ import java.util.stream.StreamSupport;
 
 public class SmsReader {
 
-    private static final String ACCOUNT_SID = "TwilioAccountSid";
-    private static final String AUTH_TOKEN = "TwilioAccountToken";
-    private static final String TO_PHONE_NUMBER = "747674589";
+    private static final String ACCOUNT_SID = System.getenv("ACCOUNTSEED");
+    private static final String AUTH_TOKEN = System.getenv("AUTHSEED");
+    private static final String TO_PHONE_NUMBER = "9282715105";
 
-    public SmsReader(){
+    private String body;
+    public void getLastMessage(){
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
-    }
+        ResourceSet<Message> messages = Message.reader().limit(5000).read();
 
-    public String getMessage(){
-        return getMessages()
-                .filter(m -> m.getDirection().compareTo(Message.Direction.INBOUND) == 0)
-                .filter(m -> m.getTo().equals(TO_PHONE_NUMBER))
-                .map(Message::getBody)
-                .findFirst()
-                .orElseThrow(IllegalStateException::new);
-    }
-
-    public void deleteMessages(){
-        getMessages()
-                .filter(m -> m.getDirection().compareTo(Message.Direction.INBOUND) == 0)
-                .filter(m -> m.getTo().equals(TO_PHONE_NUMBER))
-                .map(Message::getSid)
-                .map(sid -> Message.deleter(ACCOUNT_SID, sid))
-                .forEach(MessageDeleter::delete);
-
-    }
-
-    private Stream<Message> getMessages(){
-        ResourceSet<Message> messages = Message.reader(ACCOUNT_SID).read();
-        return StreamSupport.stream(messages.spliterator(), false);
+        this.body = messages.iterator().next().getBody();
     }
 
     public String getPINCodeFromSMS() {
+
+        getLastMessage();
+
         Pattern pattern = Pattern.compile("\\b\\d{4}\\b");
-        Matcher matcher = pattern.matcher(getMessage());
+        Matcher matcher = pattern.matcher(this.body);
 
         String pinCode = "";
         if (matcher.find())

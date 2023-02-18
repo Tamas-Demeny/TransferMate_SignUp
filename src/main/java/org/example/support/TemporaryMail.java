@@ -4,32 +4,52 @@ import com.mailslurp.apis.InboxControllerApi;
 import com.mailslurp.apis.WaitForControllerApi;
 import com.mailslurp.clients.ApiClient;
 import com.mailslurp.clients.ApiException;
+import com.mailslurp.clients.Configuration;
 import com.mailslurp.models.Email;
 import com.mailslurp.models.InboxDto;
 import net.serenitybdd.core.pages.PageObject;
 import net.thucydides.core.annotations.DefaultUrl;
+import okhttp3.OkHttpClient;
+import org.example.pages.PasswordCreationPage;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 @DefaultUrl("https://playground.mailslurp.com")
 public class TemporaryMail extends PageObject {
 
-    public TemporaryMail() throws ApiException {
-        myClient.setApiKey(MYAPIKEY);
-        myClient.setConnectTimeout(TIMEOUT_MILLIS.intValue());
+    public TemporaryMail() {
     }
-//    public static final String MYAPIKEY = System.getenv("MYAPIKEY");
-    public static final String MYAPIKEY = "f5ac62dd1ec0349acdd25fd8c9f8124438273ec023bba9127cd56821fd50e6dd";
-    private static final Long TIMEOUT_MILLIS = 30000L;
-    private static final ApiClient myClient = com.mailslurp.clients.Configuration.getDefaultApiClient();
+    public static final String MYAPIKEY = System.getenv("MYAPIKEY");
+    private static final Long TIMEOUT = 30000L;
+    private static final ApiClient MYCLIENT;
     private static InboxDto inbox;
-    InboxControllerApi inboxControllerApi = new InboxControllerApi(myClient);
+    public static InboxControllerApi inboxControllerApi;
 
     public ApiClient getMyClient() {
-        return myClient;
+        return MYCLIENT;
+    }
+
+    static {
+        OkHttpClient httpClient = new OkHttpClient.Builder()
+                .connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .readTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .build();
+
+        MYCLIENT = Configuration.getDefaultApiClient();
+
+        MYCLIENT.setConnectTimeout(TIMEOUT.intValue());
+        MYCLIENT.setWriteTimeout(TIMEOUT.intValue());
+        MYCLIENT.setReadTimeout(TIMEOUT.intValue());
+
+        MYCLIENT.setHttpClient(httpClient);
+        MYCLIENT.setApiKey(MYAPIKEY);
+
+        inboxControllerApi = new InboxControllerApi(MYCLIENT);
     }
 
     public InboxDto createEmail() throws ApiException {
@@ -47,27 +67,27 @@ public class TemporaryMail extends PageObject {
                                                         false);
     }
 
-    OffsetDateTime offsetDateTime = OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault());
-    WaitForControllerApi waitForControllerApi = new WaitForControllerApi();
+    OffsetDateTime currentTime = OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault());
+    WaitForControllerApi waitForControllerApi = new WaitForControllerApi(MYCLIENT);
 
     public Email getReceivedEmail() throws ApiException {
         return  waitForControllerApi
                 .waitForLatestEmail(inbox.getId(),
-                        TIMEOUT_MILLIS,
+                        TIMEOUT,
                         false,
                         null,
-                        offsetDateTime,
+                        currentTime,
                         null,
                         10000L);
     }
 
-    public String getText() throws ApiException {
+    public String getLink() throws ApiException {
         return Arrays.stream(getReceivedEmail().getBody().split(System.getProperty("line.separator")))
-                .filter(l -> l.contains("E-Mail-Activation")).findFirst().get();
+                .filter(l -> l.contains("activate_new_account")).findFirst().get();
     }
 
-    public void openActivationLink(String page) throws ApiException {
-        open(page);
+    public PasswordCreationPage openActivationLink(String page) {
+        return new PasswordCreationPage(page);
     }
 
 }

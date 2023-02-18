@@ -1,6 +1,9 @@
 package org.example.pages;
 
 public class PasswordCreationPage  extends BasePage{
+    public PasswordCreationPage(String link){
+        openUrl(link);
+    }
 
     public PasswordCreationPage fillInPasswords() {
         typeInto($("#password"), "NewPassword3");
